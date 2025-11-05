@@ -13,12 +13,11 @@ module SSLTest
   VERSION = -"1.4.1f"
 
   class << self
-    def test url, open_timeout: 5, read_timeout: 5, proxy_host:nil, proxy_port: nil, redirection_limit: 5, client_cert: nil, ca_bundle_path: nil
-
+    def test url, open_timeout: 5, read_timeout: 5, proxy_host:nil, proxy_port: nil, redirection_limit: 5, client_cert: nil, ca_certs: []
       cert = failed_cert_reason = chain = store = nil
 
-      if url.nil? && (client_cert.nil? || ca_bundle_path.nil?)
-        raise ArgumentError, "A url must be provided as the first argument, OR ... client_cert: AND ca_bundle_path: must both be specified"
+      if url.nil? && (client_cert.nil? || ca_certs.empty?)
+        raise ArgumentError, "A url must be provided as the first argument, OR ... client_cert: AND ca_certs: must both be specified"
       end
 
       certificate_verify_callback = -> (verify_ok, store_context) {
@@ -28,9 +27,9 @@ module SSLTest
         verify_ok
       }
 
-      if !client_cert.nil? && !ca_bundle_path.nil?
+      if !client_cert.nil? && !ca_certs.empty?
         store = OpenSSL::X509::Store.new
-        store.add_file(ca_bundle_path)
+        ca_certs.each { store.add_cert(_1) }
         store.verify_callback = certificate_verify_callback
       else
         uri = URI.parse(url)
